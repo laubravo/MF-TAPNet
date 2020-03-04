@@ -3,6 +3,7 @@ from torch import nn
 import numpy as np
 import tqdm
 import logging
+import pdb
 
 
 def iou_binary_torch(y_true, y_pred):
@@ -140,8 +141,11 @@ def calculate_confusion_matrix_from_arrays(prediction, ground_truth, nr_labels):
     confusion_matrix = confusion_matrix.astype(np.uint32)
     return confusion_matrix
 
+#def calculate_our_iou():
+    # TODO: this is what we have to change for our metrics.
 
 def calculate_iou(confusion_matrix):
+    # TODO: this is what we have to change for our metrics.
     ious = {}
     # ignore cls 0 (background)
     for cls in range(1, confusion_matrix.shape[0]):
@@ -149,7 +153,7 @@ def calculate_iou(confusion_matrix):
         false_positives = confusion_matrix[:, cls].sum() - true_positives
         false_negatives = confusion_matrix[cls, :].sum() - true_positives
 
-        # discard the class which are not presented in gt
+        ## discard the class which are not presented in gt
         if (true_positives + false_negatives) == 0:
             continue
 
@@ -205,7 +209,6 @@ class MetricRecord():
         2. compute this score for each frame and 
             **average** over all frames to get a per-dataset score
         '''
-
         # calculate mean metric for each record
         data_metrics = [np.mean(list(record.values())) for record in self._records if len(record) > 0]
 

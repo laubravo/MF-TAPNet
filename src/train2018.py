@@ -1,3 +1,5 @@
+import os
+import os.path as osp
 import numpy as np
 import torch
 import torch.nn as nn
@@ -37,9 +39,9 @@ import torchvision.utils as tvutils
 
 
 # modules
-import ds_utils.robseg_2017 as utils
+import ds_utils.robseg_2018 as utils
 from loss import LossMulti, LossMultiSemi
-from dataset import RobotSegDataset
+from dataset2018 import RobotSegDataset2018
 from metrics import (
     iou_multi_np,
     dice_multi_np,
@@ -62,8 +64,6 @@ def main(args):
     assert torch.cuda.is_available() == True
     # when the input dimension doesnot change, add this flag to speed up
     cudnn.benchmark = True
-
-    num_folds = len(args.folds)
 
     # model ckpt name prefix
     model_save_dir = '_'.join([args.model, args.problem_type, str(args.lr)])
@@ -162,13 +162,10 @@ def train_fold(fold, args):
     if args.semi:
         loss_func_semi = LossMultiSemi(num_classes, args.jaccard_weight, args.semi_loss_alpha, args.semi_method)
 
-    # train/valid filenames
-    train_filenames, valid_filenames = utils.trainval_split(args.train_dir, fold)
-
     # DataLoader and Dataset args
     train_shuffle = True
     train_ds_kwargs = {
-        'filenames': train_filenames,
+        'data_dir': osp.join(args.data_dir, 'train'),
         'problem_type': args.problem_type,
         'transform': train_transform,
         'model': args.model,
@@ -189,7 +186,7 @@ def train_fold(fold, args):
 
     # additional valid dataset kws
     valid_ds_kwargs = {
-        'filenames': valid_filenames,
+        'data_dir': osp.join(args.data_dir, 'val'),
         'problem_type': args.problem_type,
         'transform': valid_transform,
         'model': args.model,
@@ -205,7 +202,7 @@ def train_fold(fold, args):
 
     # train dataloader
     train_loader = DataLoader(
-        dataset=RobotSegDataset(**train_ds_kwargs),
+        dataset=RobotSegDataset2018(**train_ds_kwargs),
         shuffle=train_shuffle, # set to False to disable pytorch dataset shuffle
         num_workers=args.num_workers,
         batch_size=args.batch_size,
@@ -213,7 +210,7 @@ def train_fold(fold, args):
     )
     # valid dataloader
     valid_loader = DataLoader(
-        dataset=RobotSegDataset(**valid_ds_kwargs),
+        dataset=RobotSegDataset2018(**valid_ds_kwargs),
         shuffle=False, # in validation, no need to shuffle
         num_workers=valid_num_workers,
         batch_size=valid_batch_size, # in valid time. have to use one image by one
@@ -289,7 +286,7 @@ def train_fold(fold, args):
     @trainer.on(engine.Events.STARTED)
     def trainer_start_callback(engine):
         logging_logger.info('training fold {}, {} train / {} valid files'. \
-            format(fold, len(train_filenames), len(valid_filenames)))
+            format(fold, len(train_loader), len(valid_loader)))
 
         # resume training
         if args.resume:
@@ -748,8 +745,8 @@ if __name__ == '__main__':
         (1 - alpha) * supervised_loss + alpha * unsupervised_loss')
 
     # dirs
-    parser.add_argument('--train_dir', type=str, default='../data/cropped_train',
-        help='train data directory.')
+    parser.add_argument('--data_dir', type=str, default='../data/train',
+        help='path to data directory.')
 
     parser.add_argument('--model_save_dir', type=str, default='../model',
         help='model save dir.')

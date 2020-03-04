@@ -8,6 +8,7 @@ import argparse
 # more datasets can be used as seperate modules
 import ds_utils.robseg_2015 as utils_2015
 import ds_utils.robseg_2017 as utils_2017
+import ds_utils.robseg_2018 as utils_2018
 
 
 if __name__ == '__main__':
@@ -27,6 +28,8 @@ if __name__ == '__main__':
         utils_2015.preprocess_data(args)
     elif args.dataset == 'robseg_2017':
         utils_2017.preprocess_data(args)
+    elif args.dataset == 'robseg_2018':
+        utils_2018.preprocess_data(args)
     else:
         raise NotImplementedError()
 
